@@ -21,7 +21,7 @@ def main():
     while True:
         user_input = input("Press Enter to get a new joke, or type 'q'/'exit' to quit: ").strip().lower()
 
-        if user_input in ("q", "exit"):
+        if user_input.lower() in ("q", "exit"):
             print("Goodbye!")
             break
 
