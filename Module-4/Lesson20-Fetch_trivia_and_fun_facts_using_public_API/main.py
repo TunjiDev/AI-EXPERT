@@ -2,7 +2,6 @@ import requests
 import random
 import html
 
-# Education-focused categories (General Knowledge, Science, History, etc.)
 EDUCATION_CATEGORY_ID = 9  # General Knowledge category (most educational)
 API_URL = f"https://opentdb.com/api.php?amount=10&category={EDUCATION_CATEGORY_ID}&type=multiple"
 
