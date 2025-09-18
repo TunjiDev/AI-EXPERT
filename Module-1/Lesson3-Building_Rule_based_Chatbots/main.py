@@ -71,8 +71,8 @@ def show_help():
 
 # Main chat loop
 def chat():
-    print(Fore.CYAN + "Hello! I'm TravelBot.")
-    name = input(Fore.YELLOW + "Your name? ")
+    print(Fore.CYAN + "Hello! I'm a TravelBot.")
+    name = input(Fore.YELLOW + "What's your name? ")
     print(Fore.GREEN + f"Nice to meet you, {name}!")
     
     show_help()
