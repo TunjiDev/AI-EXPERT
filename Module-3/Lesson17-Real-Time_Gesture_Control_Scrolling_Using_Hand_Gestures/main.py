@@ -10,12 +10,12 @@ SCROLL_SPEED = 300
 SCROLL_DELAY = 1
 CAM_WIDTH, CAM_HEIGHT = 640, 480
 
-def detect_gesture(landmarks, handedness):  # handedness param is now unused, but kept for compatibility
+def detect_gesture(landmarks, handedness):
     fingers = []
     tips = [mp_hands.HandLandmark.INDEX_FINGER_TIP, mp_hands.HandLandmark.MIDDLE_FINGER_TIP,
             mp_hands.HandLandmark.RING_FINGER_TIP, mp_hands.HandLandmark.PINKY_TIP]
     
-    # Check fingers (except thumb) - unchanged
+    # Check fingers (except thumb)
     for tip in tips:
         if landmarks.landmark[tip].y < landmarks.landmark[tip - 2].y:
             fingers.append(1)
