@@ -1,143 +1,192 @@
-# import speech_recognition as sr
-# import pyttsx3
-# from googletrans import Translator  # Google Translate API
-
-# # Initialize text-to-speech engine
-# def speak(text, language="en"):
-#     engine = pyttsx3.init()
-#     engine.setProperty('rate', 150)  # Speed of speech
-#     voices = engine.getProperty('voices')
-    
-#     # Set voice for English or other language if supported by pyttsx3
-#     if language == "en":
-#         engine.setProperty('voice', voices[0].id)  # Default English voice
-#     else:
-#         engine.setProperty('voice', voices[1].id)  # Fallback to another voice if available
-    
-#     engine.say(text)
-#     engine.runAndWait()
-
-# # Speech-to-Text: Recognize spoken language (English)
-# def speech_to_text():
-#     recognizer = sr.Recognizer()
-#     with sr.Microphone() as source:
-#         print("🎤 Please speak now in English...")
-#         audio = recognizer.listen(source)
-
-#     try:
-#         print("🔍 Recognizing speech...")
-#         text = recognizer.recognize_google(audio, language="en-US")  # Use English for speech recognition
-#         print(f"✅ You said: {text}")
-#         return text
-#     except sr.UnknownValueError:
-#         print("❌ Could not understand the audio.")
-#     except sr.RequestError as e:
-#         print(f"❌ API Error: {e}")
-#     return ""
-
-# # Translate text using Google Translate API
-# def translate_text(text, target_language="es"):  # Default target language is Spanish (es)
-#     translator = Translator()
-#     translation = translator.translate(text, dest=target_language)
-#     print(f"🌍 Translated text: {translation.text}")
-#     return translation.text
-
-# # Display language options to the user
-# def display_language_options():
-#     print("🌍 Available translation languages: ")
-#     print("1. Hindi (hi)")
-#     print("2. Tamil (ta)")
-#     print("3. Telugu (te)")
-#     print("4. Bengali (bn)")
-#     print("5. Marathi (mr)")
-#     print("6. Gujarati (gu)")
-#     print("7. Malayalam (ml)")
-#     print("8. Punjabi (pa)")
-
-#     # User selects language
-#     choice = input("Please select the target language number (1-8): ")
-#     language_dict = {
-#         "1": "hi",
-#         "2": "ta",
-#         "3": "te",
-#         "4": "bn",
-#         "5": "mr",
-#         "6": "gu",
-#         "7": "ml",
-#         "8": "pa"
-#     }
-    
-#     return language_dict.get(choice, "es")  # Default to Spanish if invalid input
-
-# # Main function to combine all steps
-# def main():
-#     # Step 1: Display language options and get user's choice
-#     target_language = display_language_options()
-    
-#     # Step 2: Speech-to-Text (recognizing English speech)
-#     original_text = speech_to_text()
-    
-#     if original_text:
-#         # Step 3: Translate to selected target language
-#         translated_text = translate_text(original_text, target_language=target_language)
-        
-#         # Step 4: Text-to-Speech (Translate output and speak it)
-#         speak(translated_text, language="en")  # Speak the translation in English
-#         print("✅ Translation spoken out!")
-
-# if __name__ == "__main__":
-#     main()
-
-import queue
-import sounddevice as sd
-from vosk import Model, KaldiRecognizer
+import speech_recognition as sr
+import asyncio
 import pyttsx3
-import json
-import datetime
+from googletrans import Translator  # Google Translate API
 
-# Load Vosk model
-model = Model("Model")
-recognizer = KaldiRecognizer(model, 16000)
-audio_queue = queue.Queue()
+# Initialize text-to-speech engineSyncHTTPTransport
+def speak(text, language="en"):
+    engine = None
 
-# Initialize Text-to-Speech
-tts_engine = pyttsx3.init()
+    try:
+        engine = pyttsx3.init()
+        engine.setProperty("rate", 150)
 
-def speak(text):
-    print("Assistant:", text)
-    tts_engine.say(text)
-    tts_engine.runAndWait()
+        voices = engine.getProperty("voices")
 
-def callback(indata, frames, time, status):
-    if status:
-        print("Status:", status)
-    audio_queue.put(bytes(indata))
+        # Try to find a voice matching the requested language
+        language = language.lower()
 
-def process_query(query):
-    query = query.lower()
-    if "time" in query:
-        now = datetime.datetime.now().strftime("%H:%M")
-        response = f"The current time is {now}"
-    elif "date" in query:
-        today = datetime.datetime.now().strftime("%B %d, %Y")
-        response = f"Today's date is {today}"
-    else:
-        response = "I'm sorry, I didn't understand that."
-    return response
+        for voice in voices:
+            voice_info = (
+                str(voice.id) + " " +
+                str(voice.name) + " " +
+                str(voice.languages)
+            ).lower()
 
-# Main listening loop
-with sd.RawInputStream(samplerate=16000, blocksize=8000, dtype='int16',
-                       channels=1, callback=callback):
-    print("Listening... Press Ctrl+C to stop.")
-    while True:
-        data = audio_queue.get()
-        if recognizer.AcceptWaveform(data):
-            result = json.loads(recognizer.Result())
-            text = result.get("text", "")
-            if text:
-                print("You said:", text)
-                answer = process_query(text)
-                
+            if language in voice_info:
+                engine.setProperty("voice", voice.id)
+                break
+
+        engine.say(text)
+        engine.runAndWait()
+
+    except Exception as e:
+        print(f"Text-to-speech error: {e}")
+
+    finally:
+        if engine:
+            engine.stop()
+
+def speech_to_text():
+    recognizer = sr.Recognizer()
+
+    recognizer.pause_threshold = 2.5
+    recognizer.dynamic_energy_threshold = True
+    recognizer.non_speaking_duration = 0.5
+
+    try:
+        with sr.Microphone() as source:
+
+            print("\nCalibrating microphone... Please wait.")
+
+            recognizer.adjust_for_ambient_noise(
+                source,
+                duration=1
+            )
+
+            print("\nMicrophone ready!")
+            print("Start speaking in English...")
+            print("You have up to 30 seconds.")
+
+            audio = recognizer.listen(
+                source,
+                timeout=None,
+                phrase_time_limit=30
+            )
+
+        print("\nRecognizing speech...")
+
+        text = recognizer.recognize_google(
+            audio,
+            language="en-US"
+        )
+
+        print(f"\nYou said: {text}")
+        return text
+
+    except sr.UnknownValueError:
+        print("Could not understand the audio.")
+
+    except sr.RequestError as e:
+        print(f"Speech recognition API error: {e}")
+
+    except OSError as e:
+        print(f"Microphone error: {e}")
+
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
+    return ""
+
+# Translate text using Google Translate API
+async def async_translate_text(text, target_language):
+    async with Translator() as translator:
+        translation = await translator.translate(
+            text,
+            dest=target_language
+        )
+        return translation.text
 
 
+def translate_text(text, target_language="es"):
+    try:
+        translated_text = asyncio.run(
+            async_translate_text(text, target_language)
+        )
+        print(f"Translated text: {translated_text}")
+        return translated_text
 
+    except Exception as e:
+        print(f"Translation error: {e}")
+        return ""
+
+# Display language options to the user
+def display_language_options():
+    print("\nAvailable translation languages:")
+    print("1. Hindi (hi)")
+    print("2. Tamil (ta)")
+    print("3. Telugu (te)")
+    print("4. Bengali (bn)")
+    print("5. Marathi (mr)")
+    print("6. Gujarati (gu)")
+    print("7. Malayalam (ml)")
+    print("8. Punjabi (pa)")
+    print("9. Japanese (ja)")
+    print("10. French (fr)")
+    print("11. Spanish (es)")
+    print("12. German (de)")
+    print("13. Chinese (zh-cn)")
+    print("14. Korean (ko)")
+    print("15. Italian (it)")
+    print("16. Portuguese (pt)")
+
+    language_dict = {
+        "1": "hi",
+        "2": "ta",
+        "3": "te",
+        "4": "bn",
+        "5": "mr",
+        "6": "gu",
+        "7": "ml",
+        "8": "pa",
+        "9": "ja",
+        "10": "fr",
+        "11": "es",
+        "12": "de",
+        "13": "zh-cn",
+        "14": "ko",
+        "15": "it",
+        "16": "pt"
+    }
+
+    choice = input("\nSelect a target language (1-16): ").strip()
+
+    if choice not in language_dict:
+        print("Invalid selection. Defaulting to Spanish.")
+
+    return language_dict.get(choice, "es")
+
+# Main function to combine all steps
+
+def main():
+    target_language = display_language_options()
+
+    original_text = speech_to_text()
+
+    if not original_text:
+        print("\nNo speech was recognized. Please try again.")
+        return
+
+    # Speak the original English words
+    print("\nSpeaking your original words...")
+    speak(original_text, language="en")
+
+    # Translate the original text
+    translated_text = translate_text(
+        original_text,
+        target_language=target_language
+    )
+
+    if not translated_text:
+        print("\nTranslation failed. Please try again.")
+        return
+
+    # Speak the translated text
+    print("\nSpeaking the translated text...")
+    speak(translated_text, language=target_language)
+
+    print("\nTranslation spoken out!")
+
+
+if __name__ == "__main__":
+    main()
