@@ -6,33 +6,25 @@ from googletrans import Translator  # Google Translate API
 # Initialize text-to-speech engineSyncHTTPTransport
 def speak(text, language="en"):
     engine = None
-
     try:
         engine = pyttsx3.init()
         engine.setProperty("rate", 150)
-
         voices = engine.getProperty("voices")
-
         # Try to find a voice matching the requested language
         language = language.lower()
-
         for voice in voices:
             voice_info = (
                 str(voice.id) + " " +
                 str(voice.name) + " " +
                 str(voice.languages)
             ).lower()
-
             if language in voice_info:
                 engine.setProperty("voice", voice.id)
                 break
-
         engine.say(text)
         engine.runAndWait()
-
     except Exception as e:
         print(f"Text-to-speech error: {e}")
-
     finally:
         if engine:
             engine.stop()
@@ -150,17 +142,13 @@ def display_language_options():
     }
 
     choice = input("\nSelect a target language (1-16): ").strip()
-
     if choice not in language_dict:
         print("Invalid selection. Defaulting to Spanish.")
-
     return language_dict.get(choice, "es")
-
 # Main function to combine all steps
 
 def main():
     target_language = display_language_options()
-
     original_text = speech_to_text()
 
     if not original_text:
