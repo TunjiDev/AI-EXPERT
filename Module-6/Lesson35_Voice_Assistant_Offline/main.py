@@ -1,6 +1,7 @@
 import speech_recognition as sr
 import pyttsx3
 from googletrans import Translator  # Google Translate API
+import asyncio
 
 # Initialize text-to-speech engine
 def speak(text, language="en"):
@@ -72,20 +73,25 @@ def display_language_options():
     return language_dict.get(choice, "es")  # Default to Spanish if invalid input
 
 # Main function to combine all steps
-def main():
-    # Step 1: Display language options and get user's choice
+async def main():
+    # Step 1: Display language options
     target_language = display_language_options()
-    
-    # Step 2: Speech-to-Text (recognizing English speech)
+
+    # Step 2: Speech-to-Text
     original_text = speech_to_text()
-    
+
     if original_text:
-        # Step 3: Translate to selected target language
-        translated_text = translate_text(original_text, target_language=target_language)
-        
-        # Step 4: Text-to-Speech (Translate output and speak it)
-        speak(translated_text, language="en")  # Speak the translation in English
-        print("✅ Translation spoken out!")
+        # Step 3: Translate the text
+        translated_text = await translate_text(
+            original_text,
+            target_language
+        )
+
+        # Step 4: Speak the translated text
+        if translated_text:
+            speak(translated_text, language=target_language)
+            print("✅ Translation spoken out!")
+
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
